@@ -18,10 +18,12 @@ package main
 
 import (
 	"flag"
-	inferenceservicev1 "github.com/kserve/modelmesh-serving/apis/serving/v1beta1"
-	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	"os"
 	"strconv"
+
+	kserve "github.com/kserve/kserve/pkg/apis/serving/v1beta1"
+	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+	istiosecurityv1beta1 "istio.io/client-go/pkg/apis/security/v1beta1"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -34,7 +36,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	predictorv1 "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
 	"github.com/opendatahub-io/odh-model-controller/controllers"
 	routev1 "github.com/openshift/api/route/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -50,12 +51,12 @@ var (
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
-	utilruntime.Must(inferenceservicev1.AddToScheme(scheme))
-	utilruntime.Must(predictorv1.AddToScheme(scheme))
+	utilruntime.Must(kserve.AddToScheme(scheme))
 	utilruntime.Must(corev1.AddToScheme(scheme))
 	utilruntime.Must(routev1.AddToScheme(scheme))
 	utilruntime.Must(authv1.AddToScheme(scheme))
 	utilruntime.Must(monitoringv1.AddToScheme(scheme))
+	utilruntime.Must(istiosecurityv1beta1.AddToScheme(scheme))
 
 	// The following are related to Service Mesh, uncomment this and other
 	// similar blocks to use with Service Mesh
@@ -78,6 +79,7 @@ func main() {
 	var enableLeaderElection bool
 	var monitoringNS string
 	var probeAddr string
+	var enableKserveMonitoring bool
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
@@ -87,7 +89,7 @@ func main() {
 		"The Namespace where the monitoring stack's Prometheus resides.")
 	flag.StringVar(&monitoringNS, "apps-namespace", "",
 		"The Namespace where odh apps reside.")
-
+	flag.BoolVar(&enableKserveMonitoring, "enable-kserve-monitoring", true, "Enable Kserve monitoring")
 	opts := zap.Options{
 		Development: true,
 	}
@@ -109,40 +111,52 @@ func main() {
 		os.Exit(1)
 	}
 
-	//Setup InferenceService controller
-	if err = (&controllers.OpenshiftInferenceServiceReconciler{
-		Client:       mgr.GetClient(),
-		Log:          ctrl.Log.WithName("controllers").WithName("InferenceService"),
-		Scheme:       mgr.GetScheme(),
-		MeshDisabled: getEnvAsBool("MESH_DISABLED", false),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "InferenceService")
-		os.Exit(1)
-	}
-
-	if err = (&controllers.StorageSecretReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("StorageSecret"),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "StorageSecret")
-		os.Exit(1)
-	}
-
-	if monitoringNS != "" {
-		setupLog.Info("Monitoring namespace provided, setting up monitoring controller.")
-		if err = (&controllers.MonitoringReconciler{
-			Client:       mgr.GetClient(),
-			Log:          ctrl.Log.WithName("controllers").WithName("MonitoringReconciler"),
-			Scheme:       mgr.GetScheme(),
-			MonitoringNS: monitoringNS,
+	if enableKserveMonitoring == true {
+		//Setup Kserve Monitoring controller
+		if err = (&controllers.KserveMonitoringReconciler{
+			Client: mgr.GetClient(),
+			Log:    ctrl.Log.WithName("controllers").WithName("InferenceService"),
+			Scheme: mgr.GetScheme(),
 		}).SetupWithManager(mgr); err != nil {
-			setupLog.Error(err, "unable to create controller", "controller", "MonitoringReconciler")
+			setupLog.Error(err, "unable to create controller", "controller", "InferenceService")
 			os.Exit(1)
 		}
 	} else {
-		setupLog.Info("Monitoring namespace not provided, skipping setup of monitoring controller. To enable " +
-			"monitoring for ModelServing, please provide a monitoring namespace via the (--monitoring-namespace) flag.")
+		//Setup InferenceService controller
+		if err = (&controllers.OpenshiftInferenceServiceReconciler{
+			Client:       mgr.GetClient(),
+			Log:          ctrl.Log.WithName("controllers").WithName("InferenceService"),
+			Scheme:       mgr.GetScheme(),
+			MeshDisabled: getEnvAsBool("MESH_DISABLED", false),
+		}).SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "InferenceService")
+			os.Exit(1)
+		}
+
+		if err = (&controllers.StorageSecretReconciler{
+			Client: mgr.GetClient(),
+			Log:    ctrl.Log.WithName("controllers").WithName("StorageSecret"),
+			Scheme: mgr.GetScheme(),
+		}).SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "StorageSecret")
+			os.Exit(1)
+		}
+
+		if monitoringNS != "" {
+			setupLog.Info("Monitoring namespace provided, setting up monitoring controller.")
+			if err = (&controllers.MonitoringReconciler{
+				Client:       mgr.GetClient(),
+				Log:          ctrl.Log.WithName("controllers").WithName("MonitoringReconciler"),
+				Scheme:       mgr.GetScheme(),
+				MonitoringNS: monitoringNS,
+			}).SetupWithManager(mgr); err != nil {
+				setupLog.Error(err, "unable to create controller", "controller", "MonitoringReconciler")
+				os.Exit(1)
+			}
+		} else {
+			setupLog.Info("Monitoring namespace not provided, skipping setup of monitoring controller. To enable " +
+				"monitoring for ModelServing, please provide a monitoring namespace via the (--monitoring-namespace) flag.")
+		}
 	}
 
 	//+kubebuilder:scaffold:builder

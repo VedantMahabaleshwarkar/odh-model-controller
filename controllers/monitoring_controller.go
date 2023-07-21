@@ -17,6 +17,8 @@ package controllers
 
 import (
 	"context"
+	"reflect"
+
 	"github.com/go-logr/logr"
 	mmv1alpha1 "github.com/kserve/modelmesh-serving/apis/serving/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
@@ -25,7 +27,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"reflect"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
