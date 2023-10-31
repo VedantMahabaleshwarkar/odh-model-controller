@@ -18,13 +18,14 @@ package controllers
 import (
 	"context"
 	"encoding/json"
+	"reflect"
+
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/retry"
-	"reflect"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -54,6 +55,7 @@ func newStorageSecret(dataConnectionSecretsList *corev1.SecretList) *corev1.Secr
 		dataConnectionElement["secret_access_key"] = string(secret.Data["AWS_SECRET_ACCESS_KEY"])
 		dataConnectionElement["endpoint_url"] = string(secret.Data["AWS_S3_ENDPOINT"])
 		dataConnectionElement["default_bucket"] = string(secret.Data["AWS_S3_BUCKET"])
+		dataConnectionElement["bucket"] = string(secret.Data["AWS_S3_BUCKET"])
 		dataConnectionElement["region"] = string(secret.Data["AWS_DEFAULT_REGION"])
 		if secret.Data["AWS_CA_BUNDLE"] != nil {
 			dataConnectionElement["certificate"] = string(secret.Data["AWS_CA_BUNDLE"])
