@@ -39,26 +39,32 @@ spec:
           command: ["/bin/bash", "-c", "--"]
           args:
             - |
-              #delete prometheus operator deployment
-              prometheusoperatordeploymentexists=$(oc get deployments -o name -n redhat-ods-monitoring | grep rhods-prometheus-operator || echo "false")
-              if [[ $prometheusoperatordeploymentexists != "false" ]]; then
-                echo "deleting prometheus operator deployment for deprecated model monitoring stack"
-                oc delete deployment rhods-prometheus-operator -n redhat-ods-monitoring
-              fi 
+              #check if namespace redhat-ods-monitoring exists 
+              moinitoringnamespaceexists = $(oc get project redhat-ods-monitoring | grep redhat-ods-monitoring || echo "false")
+              if [[ $moinitoringnamespaceexists != "false" ]]; then
 
-              #delete prometheus statefulset
-              prometheusstatefulsetexists=$(oc get statefulsets -o name -n redhat-ods-monitoring | grep prometheus-rhods-model-monitoring || echo "false")
-              if [[ $prometheusstatefulsetexists != "false" ]]; then
-                echo "deleting prometheus operator deployment for deprecated model monitoring stack"
-                oc delete statefulset prometheus-rhods-model-monitoring -n redhat-ods-monitoring
-              fi 
+                #delete prometheus operator deployment
+                prometheusoperatordeploymentexists=$(oc get deployments -o name -n redhat-ods-monitoring | grep rhods-prometheus-operator || echo "false")
+                if [[ $prometheusoperatordeploymentexists != "false" ]]; then
+                  echo "deleting prometheus operator deployment for deprecated model monitoring stack"
+                  oc delete deployment rhods-prometheus-operator -n redhat-ods-monitoring
+                fi 
 
-              #delete servicemonitor
-              federatedmetricsservicemonitorexists=$(oc get servicemonitors -o name -n redhat-ods-monitoring | grep modelmesh-federated-metrics || echo "false")
-              if [[ $federatedmetricsservicemonitorexists != "false" ]]; then
-                echo "deleting prometheus operator deployment for deprecated model monitoring stack"
-                oc delete servicemonitor modelmesh-federated-metrics -n redhat-ods-monitoring
-              fi 
+                #delete prometheus statefulset
+                prometheusstatefulsetexists=$(oc get statefulsets -o name -n redhat-ods-monitoring | grep prometheus-rhods-model-monitoring || echo "false")
+                if [[ $prometheusstatefulsetexists != "false" ]]; then
+                  echo "deleting prometheus operator deployment for deprecated model monitoring stack"
+                  oc delete statefulset prometheus-rhods-model-monitoring -n redhat-ods-monitoring
+                fi 
+
+                #delete servicemonitor
+                federatedmetricsservicemonitorexists=$(oc get servicemonitors -o name -n redhat-ods-monitoring | grep modelmesh-federated-metrics || echo "false")
+                if [[ $federatedmetricsservicemonitorexists != "false" ]]; then
+                  echo "deleting prometheus operator deployment for deprecated model monitoring stack"
+                  oc delete servicemonitor modelmesh-federated-metrics -n redhat-ods-monitoring
+                fi
+              fi
+              # if namespace redhat-ods-monitoring does not exist, do nothing  
       containers:        
         - command:
             - /manager
