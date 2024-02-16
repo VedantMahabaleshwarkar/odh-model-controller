@@ -97,7 +97,7 @@ func (r *OpenshiftInferenceServiceReconciler) Reconcile(ctx context.Context, req
 		log.Info("Reconciling InferenceService for Kserve in mode Serverless")
 		err = r.kserveISVCReconciler.ReconcileServerless(ctx, log, isvc)
 	case utils.RawDeployment:
-		log.Info("Reconciling InferenceService for Kserve in mode Serverless")
+		log.Info("Reconciling InferenceService for Kserve in mode RawDeployment")
 		err = r.kserveISVCReconciler.ReconcileRawDeployment(ctx, log, isvc)
 	}
 
