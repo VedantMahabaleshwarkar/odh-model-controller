@@ -17,6 +17,7 @@ package controllers
 
 import (
 	"context"
+
 	"github.com/go-logr/logr"
 	kservev1alpha1 "github.com/kserve/kserve/pkg/apis/serving/v1alpha1"
 	kservev1beta1 "github.com/kserve/kserve/pkg/apis/serving/v1beta1"
@@ -87,12 +88,17 @@ func (r *OpenshiftInferenceServiceReconciler) Reconcile(ctx context.Context, req
 	}
 
 	// Check what deployment mode is used by the InferenceService. We have differing reconciliation logic for Kserve and ModelMesh
-	if utils.IsDeploymentModeForIsvcModelMesh(isvc) {
+	IsvcDeploymentMode, err := utils.GetDeploymentModeForIsvc(ctx, r.client, isvc)
+	switch IsvcDeploymentMode {
+	case utils.ModelMesh:
 		log.Info("Reconciling InferenceService for ModelMesh")
 		err = r.mmISVCReconciler.Reconcile(ctx, log, isvc)
-	} else {
-		log.Info("Reconciling InferenceService for Kserve")
-		err = r.kserveISVCReconciler.Reconcile(ctx, log, isvc)
+	case utils.Serverless:
+		log.Info("Reconciling InferenceService for Kserve in mode Serverless")
+		err = r.kserveISVCReconciler.ReconcileServerless(ctx, log, isvc)
+	case utils.RawDeployment:
+		log.Info("Reconciling InferenceService for Kserve in mode Serverless")
+		err = r.kserveISVCReconciler.ReconcileRawDeployment(ctx, log, isvc)
 	}
 
 	return ctrl.Result{}, err

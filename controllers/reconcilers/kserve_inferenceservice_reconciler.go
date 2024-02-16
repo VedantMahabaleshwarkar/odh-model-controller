@@ -17,6 +17,7 @@ package reconcilers
 
 import (
 	"context"
+
 	"github.com/go-logr/logr"
 	kservev1beta1 "github.com/kserve/kserve/pkg/apis/serving/v1beta1"
 	"github.com/opendatahub-io/odh-model-controller/controllers/utils"
@@ -54,8 +55,12 @@ func NewKServeInferenceServiceReconciler(client client.Client, scheme *runtime.S
 	}
 }
 
-func (r *KserveInferenceServiceReconciler) Reconcile(ctx context.Context, log logr.Logger, isvc *kservev1beta1.InferenceService) error {
+func (r *KserveInferenceServiceReconciler) ReconcileRawDeployment(ctx context.Context, log logr.Logger, isvc *kservev1beta1.InferenceService) error {
+	log.V(1).Info("No Reconciliation to be done for inferenceservice as it is using RawDeployment mode", isvc.Name)
+	return nil
+}
 
+func (r *KserveInferenceServiceReconciler) ReconcileServerless(ctx context.Context, log logr.Logger, isvc *kservev1beta1.InferenceService) error {
 	//  Resource created per namespace
 	log.V(1).Info("Verifying that the default ServiceMeshMemberRoll has the target namespace")
 	if err := r.istioSMMRReconciler.Reconcile(ctx, log, isvc); err != nil {
