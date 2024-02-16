@@ -56,7 +56,7 @@ func NewKServeInferenceServiceReconciler(client client.Client, scheme *runtime.S
 }
 
 func (r *KserveInferenceServiceReconciler) ReconcileRawDeployment(ctx context.Context, log logr.Logger, isvc *kservev1beta1.InferenceService) error {
-	log.V(1).Info("No Reconciliation to be done for inferenceservice as it is using RawDeployment mode", isvc.Name)
+	log.V(1).Info("No Reconciliation to be done for inferenceservice as it is using RawDeployment mode", "inferenceservice", isvc.Name)
 	return nil
 }
 
