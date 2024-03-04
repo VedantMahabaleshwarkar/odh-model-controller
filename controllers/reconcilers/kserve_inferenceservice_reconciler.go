@@ -38,6 +38,7 @@ type KserveInferenceServiceReconciler struct {
 	istioPeerAuthenticationReconciler *KserveIstioPeerAuthenticationReconciler
 	networkPolicyReconciler           *KserveNetworkPolicyReconciler
 	authConfigReconciler              *KserveAuthConfigReconciler
+	kserveMetricsDashboardReconciler  *KserveMetricsDashboardReconciler
 }
 
 func NewKServeInferenceServiceReconciler(client client.Client, scheme *runtime.Scheme) *KserveInferenceServiceReconciler {
@@ -54,6 +55,7 @@ func NewKServeInferenceServiceReconciler(client client.Client, scheme *runtime.S
 		istioPeerAuthenticationReconciler: NewKServeIstioPeerAuthenticationReconciler(client, scheme),
 		networkPolicyReconciler:           NewKServeNetworkPolicyReconciler(client, scheme),
 		authConfigReconciler:              NewKserveAuthConfigReconciler(client, scheme),
+		kserveMetricsDashboardReconciler:  NewKserveMetricsDashboardReconciler(client, scheme),
 	}
 }
 
@@ -117,6 +119,11 @@ func (r *KserveInferenceServiceReconciler) ReconcileServerless(ctx context.Conte
 
 	log.V(1).Info("Reconciling Metrics ServiceMonitor for InferenceService")
 	if err := r.metricsServiceMonitorReconciler.Reconcile(ctx, log, isvc); err != nil {
+		return err
+	}
+
+	log.V(1).Info("Reconciling Metrics Dashboard ConfigMap for InferenceService")
+	if err := r.kserveMetricsDashboardReconciler.Reconcile(ctx, log, isvc); err != nil {
 		return err
 	}
 

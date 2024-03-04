@@ -1,0 +1,12 @@
+{
+  "graphs": [
+    {
+      "Title": "Test Title 1",
+      "Query": "Test Query 1"
+    }, 
+    {
+      "Title": "Test Title 2",
+      "Query": "Test Query 2"
+    }
+  ]
+}
