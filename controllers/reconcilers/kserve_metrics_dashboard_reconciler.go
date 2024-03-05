@@ -83,7 +83,7 @@ func (r *KserveMetricsDashboardReconciler) Reconcile(ctx context.Context, log lo
 func (r *KserveMetricsDashboardReconciler) createDesiredResource(log logr.Logger, isvc *kservev1beta1.InferenceService) (*corev1.ConfigMap, error) {
 
 	var configMapData MetricsDashboardConfigMapData
-	data, err := os.ReadFile("controllers/constants/caikit-tgis-metrics.json")
+	data, err := os.ReadFile("caikit-tgis-metrics.json")
 	if err != nil {
 		log.Error(err, "Unable to load metrics dashboard template file")
 	}
@@ -91,7 +91,7 @@ func (r *KserveMetricsDashboardReconciler) createDesiredResource(log logr.Logger
 	if err != nil {
 		log.Error(err, "Unable to load metrics dashboard templates")
 	}
-	jsonData, err := json.Marshal(configMapData)
+	jsonData, err := json.MarshalIndent(configMapData, "", " ")
 	if err != nil {
 		log.Error(err, "Unable to marshal data for metrics dashboard configmap")
 	}
