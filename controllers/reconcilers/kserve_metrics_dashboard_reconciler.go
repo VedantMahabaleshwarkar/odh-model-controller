@@ -83,7 +83,7 @@ func (r *KserveMetricsDashboardReconciler) Reconcile(ctx context.Context, log lo
 func (r *KserveMetricsDashboardReconciler) createDesiredResource(log logr.Logger, isvc *kservev1beta1.InferenceService) (*corev1.ConfigMap, error) {
 
 	var configMapData MetricsDashboardConfigMapData
-	data, err := os.ReadFile("config/prometheus/caikit-tgis-metrics.json")
+	data, err := os.ReadFile("controllers/constants/caikit-tgis-metrics.json")
 	if err != nil {
 		log.Error(err, "Unable to load metrics dashboard template file")
 	}
