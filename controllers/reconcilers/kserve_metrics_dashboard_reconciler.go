@@ -95,7 +95,6 @@ func (r *KserveMetricsDashboardReconciler) createDesiredResource(log logr.Logger
 	if err != nil {
 		log.Error(err, "Unable to marshal data for metrics dashboard configmap")
 	}
-	log.V(1).Info("jsondata", "value", string(jsonData))
 	// Create ConfigMap object
 	configMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
