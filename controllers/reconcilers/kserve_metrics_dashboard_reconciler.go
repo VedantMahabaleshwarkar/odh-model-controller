@@ -132,6 +132,8 @@ func (r *KserveMetricsDashboardReconciler) createDesiredResource(ctx context.Con
 			vllmData = data
 		}
 		templatedData = vllmData
+	default:
+		log.V(1).Info("Metrics for runtime %s not supported.", runtimeImageName)
 	}
 
 	var configMapData MetricsDashboardConfigMapData
@@ -140,7 +142,6 @@ func (r *KserveMetricsDashboardReconciler) createDesiredResource(ctx context.Con
 	if err != nil {
 		log.Error(err, "Unable to load metrics dashboard templates")
 	}
-	log.V(1).Info("data", "value", string(data))
 	// Create ConfigMap object
 	configMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
