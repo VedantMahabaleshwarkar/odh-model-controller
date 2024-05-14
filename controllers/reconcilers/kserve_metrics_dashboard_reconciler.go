@@ -19,11 +19,14 @@ import (
 	"context"
 	"encoding/json"
 	"os"
+	"regexp"
 	"strings"
 
 	"github.com/go-logr/logr"
+	kservev1alpha1 "github.com/kserve/kserve/pkg/apis/serving/v1alpha1"
 	kservev1beta1 "github.com/kserve/kserve/pkg/apis/serving/v1beta1"
 	"github.com/opendatahub-io/odh-model-controller/controllers/comparators"
+	"github.com/opendatahub-io/odh-model-controller/controllers/constants"
 	"github.com/opendatahub-io/odh-model-controller/controllers/processors"
 	"github.com/opendatahub-io/odh-model-controller/controllers/resources"
 
@@ -39,8 +42,13 @@ type Graph struct {
 	Title string `json:"Title"`
 	Query string `json:"Query"`
 }
+
+type Panels struct {
+	Graphs []Graph `json:"Graphs"`
+}
+
 type MetricsDashboardConfigMapData struct {
-	Graphs []Graph `json:"graphs"`
+	Data map[string]Panels `json:""`
 }
 
 var _ SubResourceReconciler = (*KserveMetricsDashboardReconciler)(nil)
@@ -66,7 +74,7 @@ func NewKserveMetricsDashboardReconciler(client client.Client) *KserveMetricsDas
 func (r *KserveMetricsDashboardReconciler) Reconcile(ctx context.Context, log logr.Logger, isvc *kservev1beta1.InferenceService) error {
 
 	// Create Desired resource
-	desiredResource, err := r.createDesiredResource(log, isvc)
+	desiredResource, err := r.createDesiredResource(ctx, log, isvc)
 	if err != nil {
 		return err
 	}
@@ -84,36 +92,55 @@ func (r *KserveMetricsDashboardReconciler) Reconcile(ctx context.Context, log lo
 	return nil
 }
 
-func (r *KserveMetricsDashboardReconciler) createDesiredResource(log logr.Logger, isvc *kservev1beta1.InferenceService) (*corev1.ConfigMap, error) {
+func (r *KserveMetricsDashboardReconciler) createDesiredResource(ctx context.Context, log logr.Logger, isvc *kservev1beta1.InferenceService) (*corev1.ConfigMap, error) {
 
-	// resolve SR
-
-	// switch SR :
-	// 	case ovms:
-	// 		if ovmsData == nil
-	// 			read file into ovmsData
-	// 			data == deepcopy of ovmsData
-
-	var configMapData MetricsDashboardConfigMapData
-	//TODO: move read file logic to switch and only read if global variable is nil
-	data, err := os.ReadFile("ovms-metrics.json")
-	if err != nil {
-		log.Error(err, "Unable to load metrics dashboard template file")
+	isvcRuntime := isvc.Spec.Predictor.Model.Runtime
+	runtime := &kservev1alpha1.ServingRuntime{}
+	if err := r.client.Get(ctx, types.NamespacedName{Name: *isvcRuntime, Namespace: isvc.Namespace}, runtime); err != nil {
+		log.Error(err, "Could not determine servingruntime for isvc")
 	}
 
-	stringData := string(data)
-	stringDatawithNS := strings.Replace(stringData, "${namespace}", isvc.Namespace, -1)
-	stringDataComplete := strings.Replace(stringDatawithNS, "${model_name}", isvc.Name, -1)
-	data = []byte(stringDataComplete)
-	err = json.Unmarshal(data, &configMapData)
+	runtimeImage := runtime.Spec.Containers[0].Image
+	runtimeImageName := extractImageName(runtimeImage)
+
+	var templatedData []byte
+	switch runtimeImageName {
+	case constants.Tgis:
+		if tgisData == nil {
+			data, err := os.ReadFile("tgis-metrics.json")
+			if err != nil {
+				log.Error(err, "Unable to load metrics dashboard template file")
+			}
+			tgisData = data
+		}
+		templatedData = tgisData
+	case constants.Ovms:
+		if ovmsData == nil {
+			data, err := os.ReadFile("ovms-metrics.json")
+			if err != nil {
+				log.Error(err, "Unable to load metrics dashboard template file")
+			}
+			ovmsData = data
+		}
+		templatedData = ovmsData
+	case constants.Vllm:
+		if vllmData == nil {
+			data, err := os.ReadFile("vllm-metrics.json")
+			if err != nil {
+				log.Error(err, "Unable to load metrics dashboard template file")
+			}
+			vllmData = data
+		}
+		templatedData = vllmData
+	}
+
+	var configMapData MetricsDashboardConfigMapData
+	data := substituteVariablesInQueries(templatedData, isvc.Namespace, isvc.Name)
+	err := json.Unmarshal(data, &configMapData)
 	if err != nil {
 		log.Error(err, "Unable to load metrics dashboard templates")
 	}
-	jsonData, err := json.MarshalIndent(configMapData, "", " ")
-	if err != nil {
-		log.Error(err, "Unable to marshal data for metrics dashboard configmap")
-	}
-	log.V(1).Info("jsondata", "value", string(jsonData))
+	log.V(1).Info("data", "value", string(data))
 	// Create ConfigMap object
 	configMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
@@ -121,12 +148,8 @@ func (r *KserveMetricsDashboardReconciler) createDesiredResource(log logr.Logger
 			Namespace: isvc.Namespace,
 		},
 		Data: map[string]string{
-			"Data": string(jsonData), //TODO: multiple runtimes support
+			"Data": string(data),
 		},
-	}
-	// Add labels to the configMap
-	configMap.Labels = map[string]string{
-		"app.opendatahub.io/kserve": "true",
 	}
 	if err := ctrl.SetControllerReference(isvc, configMap, r.client.Scheme()); err != nil {
 		log.Error(err, "Unable to add OwnerReference to the Metrics Dashboard Configmap")
@@ -181,4 +204,20 @@ func (r *KserveMetricsDashboardReconciler) processDelta(ctx context.Context, log
 		}
 	}
 	return nil
+}
+
+func extractImageName(image string) string {
+	r := regexp.MustCompile(`.*/(.+?)(:|@).*`)
+	matches := r.FindStringSubmatch(image)
+	if len(matches) > 1 {
+		return matches[1]
+	}
+	return ""
+}
+
+func substituteVariablesInQueries(data []byte, namespace string, name string) []byte {
+	stringData := string(data)
+	stringDatawithNS := strings.Replace(stringData, "${namespace}", namespace, -1)
+	stringDataComplete := strings.Replace(stringDatawithNS, "${model_name}", name, -1)
+	return []byte(stringDataComplete)
 }

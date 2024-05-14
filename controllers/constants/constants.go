@@ -34,6 +34,13 @@ const (
 	CapabilityServiceMeshAuthorization = "CapabilityServiceMeshAuthorization"
 )
 
+// ServingRuntimes image names
+const (
+	Tgis = "text-generation-inference"
+	Ovms = "openvino_model_server"
+	Vllm = "vllm"
+)
+
 // model registry
 const (
 	MLMDAddressEnv                       = "MLMD_ADDRESS"
