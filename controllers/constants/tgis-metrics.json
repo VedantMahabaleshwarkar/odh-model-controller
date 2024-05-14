@@ -3,11 +3,11 @@
     "Graphs" : [
       {
         "Title": "Successful Requests",
-        "Query": "sum(increase(ovms_requests_success{namespace='${namespace}',name='${model_name}'}[${rate_interval}]))"
+        "Query": "sum(increase(tgi_request_success{namespace=${namespace}, pod=~'${model_name}-predictor-.*'}[${rate_interval}]))"
       },
       {
         "Title": "Failed Requests",
-        "Query": "sum(increase(ovms_requests_fail{namespace='${namespace}',name='${model_name}'}[${rate_interval}]))"
+        "Query": "sum(increase(tgi_request_failure{namespace=${namespace}, pod=~'${model_name}-predictor-.*'}[${rate_interval}]))"
       }
     ]
   },
@@ -15,11 +15,11 @@
     "Graphs" : [
       {
         "Title": "Mean inference latency",
-        "Query": "sum by (name) (rate(ovms_inference_time_us_sum{namespace='${namespace}', name='${model_name}'}[1m])) / sum by (name) (rate(ovms_inference_time_us_count{namespace='${namespace}', name='${model_name}'}[1m]))  "
+        "Query": "sum by (pod) (rate(tgi_request_inference_duration_sum{namespace=${namespace}, pod=~'${model_name}-predictor-.*'}[${rate_interval}])) / sum by (pod) (rate(tgi_request_inference_duration_count{namespace=${namespace}, pod=~'${model_name}-predictor-.*'}[1m]))"
       },
       {
         "Title": "Mean request latency",
-        "Query": "sum by (name) (rate(ovms_request_time_us_sum{name='${model_name}'}[1m])) / sum by (name) (rate(ovms_request_time_us_count{name='${model_name}'}[1m]))  "
+        "Query": "sum by (pod) (rate(tgi_request_duration_sum{namespace=${namespace}, pod=~'${model_name}-predictor-.*'}[${rate_interval}])) / sum by (pod) (rate(tgi_request_duration_count{namespace=${namespace}, pod=~'${model_name}-predictor-.*'}[1m]))"
       }
     ]
   },
