@@ -14,6 +14,8 @@ COPY main.go main.go
 #COPY api/ api/
 COPY controllers/ controllers/
 COPY controllers/constants/ovms-metrics.json metrics_dashboards/ovms-metrics.json
+COPY controllers/constants/tgis-metrics.json metrics_dashboards/tgis-metrics.json
+COPY controllers/constants/vllm-metrics.json metrics_dashboards/vllm-metrics.json
 
 # Build
 USER root
@@ -25,6 +27,8 @@ FROM registry.access.redhat.com/ubi8/ubi-minimal:8.6
 WORKDIR /
 COPY --from=builder /workspace/manager .
 COPY --from=builder /workspace/metrics_dashboards/ovms-metrics.json .
+COPY --from=builder /workspace/metrics_dashboards/tgis-metrics.json .
+COPY --from=builder /workspace/metrics_dashboards/vllm-metrics.json .
 USER 65532:65532
 
 ENTRYPOINT ["/manager"]
