@@ -17,7 +17,6 @@ package reconcilers
 
 import (
 	"context"
-	"encoding/json"
 	"os"
 	"regexp"
 	"strings"
@@ -38,18 +37,16 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-type Graph struct {
-	Title string `json:"Title"`
-	Query string `json:"Query"`
-}
+type MetricType string
 
-type Panels struct {
-	Graphs []Graph `json:"Graphs"`
-}
-
-type MetricsDashboardConfigMapData struct {
-	Data map[string]Panels `json:""`
-}
+const (
+	REQUEST_COUNT   MetricType = "REQUEST_COUNT"
+	MEAN_LATENCY    MetricType = "MEAN_LATENCY"
+	CPU_USAGE       MetricType = "CPU_USAGE"
+	MEMORY_USAGE    MetricType = "MEMORY_USAGE"
+	UNSUPPORTED     string     = "Unsupported"
+	ConfigMapSuffix string     = "-metrics-dashboard"
+)
 
 var _ SubResourceReconciler = (*KserveMetricsDashboardReconciler)(nil)
 var ovmsData []byte
@@ -134,14 +131,23 @@ func (r *KserveMetricsDashboardReconciler) createDesiredResource(ctx context.Con
 		templatedData = vllmData
 	default:
 		log.V(1).Info("Metrics for runtime %s not supported.", runtimeImageName)
+		configMap := &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      isvc.Name + ConfigMapSuffix,
+				Namespace: isvc.Namespace,
+			},
+			Data: map[string]string{
+				"supported": "false",
+			},
+		}
+		if err := ctrl.SetControllerReference(isvc, configMap, r.client.Scheme()); err != nil {
+			log.Error(err, "Unable to add OwnerReference to the Metrics Dashboard Configmap")
+			return nil, err
+		}
+		return configMap, nil
 	}
 
-	var configMapData MetricsDashboardConfigMapData
 	data := substituteVariablesInQueries(templatedData, isvc.Namespace, isvc.Name)
-	err := json.Unmarshal(data, &configMapData)
-	if err != nil {
-		log.Error(err, "Unable to load metrics dashboard templates")
-	}
 	// Create ConfigMap object
 	configMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
@@ -149,7 +155,8 @@ func (r *KserveMetricsDashboardReconciler) createDesiredResource(ctx context.Con
 			Namespace: isvc.Namespace,
 		},
 		Data: map[string]string{
-			"Data": string(data),
+			"supported": "true",
+			"metrics":   string(data),
 		},
 	}
 	if err := ctrl.SetControllerReference(isvc, configMap, r.client.Scheme()); err != nil {
