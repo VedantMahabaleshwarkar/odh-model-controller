@@ -130,7 +130,7 @@ func (r *KserveMetricsDashboardReconciler) createDesiredResource(ctx context.Con
 		}
 		templatedData = vllmData
 	default:
-		log.V(1).Info("Metrics for runtime %s not supported.", runtimeImageName)
+		log.V(1).Info("Metrics for runtime not supported.", "Runtime:", runtimeImageName)
 		configMap := &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      isvc.Name + ConfigMapSuffix,
