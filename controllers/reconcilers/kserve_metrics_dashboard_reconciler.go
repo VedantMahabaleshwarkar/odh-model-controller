@@ -170,7 +170,7 @@ func (r *KserveMetricsDashboardReconciler) createDesiredResource(ctx context.Con
 		return configMap, nil
 	}
 
-	finaldata := substituteVariablesInQueries(string(data), isvc.Namespace, isvc.Name, constants.IntervalValue)
+	finaldata := substituteVariablesInQueries(data, isvc.Namespace, isvc.Name, constants.IntervalValue)
 	// Create ConfigMap object
 	configMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
@@ -178,7 +178,8 @@ func (r *KserveMetricsDashboardReconciler) createDesiredResource(ctx context.Con
 			Namespace: isvc.Namespace,
 		},
 		Data: map[string]string{
-			"metrics": finaldata,
+			"supported": "true",
+			"metrics":   string(finaldata),
 		},
 	}
 	// Add labels to the configMap
@@ -193,8 +194,9 @@ func (r *KserveMetricsDashboardReconciler) createDesiredResource(ctx context.Con
 	return configMap, nil
 }
 
-func substituteVariablesInQueries(data string, namespace string, name string, IntervalValue string) string {
-	return strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(data, "${NAMESPACE}", namespace), "${MODEL_NAME}", name), "${RATE_INTERVAL}", IntervalValue)
+func substituteVariablesInQueries(data []byte, namespace string, name string, IntervalValue string) []byte {
+	replacer := strings.NewReplacer("${NAMESPACE}", namespace, "${MODEL_NAME}", name, "${RATE_INTERVAL}", IntervalValue)
+	return []byte(replacer.Replace(string(data)))
 }
 
 func (r *KserveMetricsDashboardReconciler) getExistingResource(ctx context.Context, log logr.Logger, isvc *kservev1beta1.InferenceService) (*corev1.ConfigMap, error) {
