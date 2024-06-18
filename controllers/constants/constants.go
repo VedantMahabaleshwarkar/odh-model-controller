@@ -54,8 +54,6 @@ const (
 const (
 	DefaultStorageConfig = "storage-config"
 	IntervalValue        = "1m"
-	ErrMessage           = "Unable to load metrics dashboard template file:"
-	ErrMessageDefault    = "Unable to add OwnerReference to the Metrics Dashboard Configmap"
 	OvmsImageName        = "openvino_model_server"
 	OvmsMetrics          = "ovms_metrics.json"
 	TgisImageName        = "text-generation-inference"
@@ -64,5 +62,4 @@ const (
 	VllmMetrics          = "vllm_metrics.json"
 	CaikitImageName      = "caikit-nlp"
 	CaikitMetrics        = "caikit_metrics.json"
-	RuntimeImageName     = "odh-model-controller"
 )

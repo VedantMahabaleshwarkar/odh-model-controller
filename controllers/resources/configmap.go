@@ -45,6 +45,6 @@ func (r *configMapHandler) FetchConfigMap(ctx context.Context, log logr.Logger, 
 	} else if err != nil {
 		return nil, err
 	}
-	log.V(1).Info("Successfully fetch deployed ClusterRoleBinding")
+	log.V(1).Info("Successfully fetched ConfigMap", "ConfigMap:", key.Name)
 	return configMap, nil
 }

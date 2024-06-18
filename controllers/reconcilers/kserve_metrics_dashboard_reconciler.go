@@ -30,7 +30,6 @@ import (
 	"github.com/opendatahub-io/odh-model-controller/controllers/resources"
 
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -61,14 +60,14 @@ var caikitData []byte
 type KserveMetricsDashboardReconciler struct {
 	NoResourceRemoval
 	client           client.Client
-	telemetryHandler resources.ConfigMapHandler
+	configMapHandler resources.ConfigMapHandler
 	deltaProcessor   processors.DeltaProcessor
 }
 
 func NewKserveMetricsDashboardReconciler(client client.Client) *KserveMetricsDashboardReconciler {
 	return &KserveMetricsDashboardReconciler{
 		client:           client,
-		telemetryHandler: resources.NewConfigMapHandler(client),
+		configMapHandler: resources.NewConfigMapHandler(client),
 		deltaProcessor:   processors.NewDeltaProcessor(),
 	}
 }
@@ -114,7 +113,7 @@ func (r *KserveMetricsDashboardReconciler) createDesiredResource(ctx context.Con
 		if ovmsData == nil {
 			ovmsData, err := os.ReadFile(constants.OvmsMetrics)
 			if err != nil {
-				log.Error(err, constants.ErrMessage)
+				log.Error(err, "Unable to load metrics dashboard template file:")
 				return nil, err
 			}
 			data = ovmsData
@@ -123,7 +122,7 @@ func (r *KserveMetricsDashboardReconciler) createDesiredResource(ctx context.Con
 		if tgisData == nil {
 			tgisData, err := os.ReadFile(constants.TgisMetrics)
 			if err != nil {
-				log.Error(err, constants.ErrMessage)
+				log.Error(err, "Unable to load metrics dashboard template file:")
 				return nil, err
 			}
 			data = tgisData
@@ -133,7 +132,7 @@ func (r *KserveMetricsDashboardReconciler) createDesiredResource(ctx context.Con
 		if vllmData == nil {
 			vllmData, err := os.ReadFile(constants.VllmMetrics)
 			if err != nil {
-				log.Error(err, constants.ErrMessage)
+				log.Error(err, "Unable to load metrics dashboard template file:")
 				return nil, err
 			}
 			data = vllmData
@@ -143,14 +142,14 @@ func (r *KserveMetricsDashboardReconciler) createDesiredResource(ctx context.Con
 		if caikitData == nil {
 			caikitData, err := os.ReadFile(constants.CaikitMetrics)
 			if err != nil {
-				log.Error(err, constants.ErrMessage)
+				log.Error(err, "Unable to load metrics dashboard template file:")
 				return nil, err
 			}
 			data = caikitData
 		}
 
 	default:
-		log.V(1).Info("Metrics for runtime not supported.", "Runtime:", constants.RuntimeImageName)
+		log.V(1).Info("Metrics for runtime not supported.", "Runtime:", runtime.Name)
 		configMap := &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      isvc.Name + "-metrics-dashboard",
@@ -161,7 +160,7 @@ func (r *KserveMetricsDashboardReconciler) createDesiredResource(ctx context.Con
 			},
 		}
 		if err := ctrl.SetControllerReference(isvc, configMap, r.client.Scheme()); err != nil {
-			log.Error(err, constants.ErrMessageDefault)
+			log.Error(err, "Unable to add OwnerReference to the Metrics Dashboard Configmap")
 			return nil, err
 		}
 		return configMap, nil
@@ -180,7 +179,7 @@ func (r *KserveMetricsDashboardReconciler) createDesiredResource(ctx context.Con
 	}
 	// Add labels to the configMap
 	configMap.Labels = map[string]string{
-		"app.opendatahub.io/kserve": "true",
+		"opendatahub.io/managed": "true",
 	}
 	if err := ctrl.SetControllerReference(isvc, configMap, r.client.Scheme()); err != nil {
 		log.Error(err, "Unable to add OwnerReference to the Metrics Dashboard Configmap")
@@ -195,16 +194,7 @@ func substituteVariablesInQueries(data string, namespace string, name string, In
 }
 
 func (r *KserveMetricsDashboardReconciler) getExistingResource(ctx context.Context, log logr.Logger, isvc *kservev1beta1.InferenceService) (*corev1.ConfigMap, error) {
-	configMap := &corev1.ConfigMap{}
-	err := r.client.Get(ctx, types.NamespacedName{Name: isvc.Name + "-metrics-dashboard", Namespace: isvc.Namespace}, configMap)
-	if err != nil {
-		if errors.IsNotFound(err) {
-			return nil, nil // ConfigMap doesn't exist
-		}
-		log.Error(err, "Failed to get existing ConfigMap")
-		return nil, err
-	}
-	return configMap, nil
+	return r.configMapHandler.FetchConfigMap(ctx, log, types.NamespacedName{Name: isvc.Name + "-metrics-dashboard", Namespace: isvc.Namespace})
 }
 
 func (r *KserveMetricsDashboardReconciler) processDelta(ctx context.Context, log logr.Logger, desiredResource *corev1.ConfigMap, existingResource *corev1.ConfigMap) (err error) {
