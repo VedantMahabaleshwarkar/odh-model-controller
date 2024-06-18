@@ -178,7 +178,8 @@ func (r *KserveMetricsDashboardReconciler) createDesiredResource(ctx context.Con
 			Namespace: isvc.Namespace,
 		},
 		Data: map[string]string{
-			"metrics": finaldata,
+			"metrics":   finaldata,
+			"supported": "true",
 		},
 	}
 	// Add labels to the configMap
