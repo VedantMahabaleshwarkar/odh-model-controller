@@ -55,11 +55,7 @@ const (
 	DefaultStorageConfig = "storage-config"
 	IntervalValue        = "1m"
 	OvmsImageName        = "openvino_model_server"
-	OvmsMetrics          = "ovms_metrics.json"
 	TgisImageName        = "text-generation-inference"
-	TgisMetrics          = "tgis_metrics.json"
 	VllmImageName        = "vllm"
-	VllmMetrics          = "vllm_metrics.json"
 	CaikitImageName      = "caikit-nlp"
-	CaikitMetrics        = "caikit_metrics.json"
 )

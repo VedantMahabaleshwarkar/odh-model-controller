@@ -111,7 +111,7 @@ func (r *KserveMetricsDashboardReconciler) createDesiredResource(ctx context.Con
 	switch servingRuntime {
 	case constants.OvmsImageName:
 		if ovmsData == nil {
-			ovmsData, err := os.ReadFile(constants.OvmsMetrics)
+			ovmsData, err := os.ReadFile("ovms-metrics.json")
 			if err != nil {
 				log.Error(err, "Unable to load metrics dashboard template file:")
 				return nil, err
@@ -120,7 +120,7 @@ func (r *KserveMetricsDashboardReconciler) createDesiredResource(ctx context.Con
 		}
 	case constants.TgisImageName:
 		if tgisData == nil {
-			tgisData, err := os.ReadFile(constants.TgisMetrics)
+			tgisData, err := os.ReadFile("tgis-metrics.json")
 			if err != nil {
 				log.Error(err, "Unable to load metrics dashboard template file:")
 				return nil, err
@@ -130,7 +130,7 @@ func (r *KserveMetricsDashboardReconciler) createDesiredResource(ctx context.Con
 
 	case constants.VllmImageName:
 		if vllmData == nil {
-			vllmData, err := os.ReadFile(constants.VllmMetrics)
+			vllmData, err := os.ReadFile("vllm-metrics.json")
 			if err != nil {
 				log.Error(err, "Unable to load metrics dashboard template file:")
 				return nil, err
@@ -140,7 +140,7 @@ func (r *KserveMetricsDashboardReconciler) createDesiredResource(ctx context.Con
 
 	case constants.CaikitImageName:
 		if caikitData == nil {
-			caikitData, err := os.ReadFile(constants.CaikitMetrics)
+			caikitData, err := os.ReadFile("caikit-metrics.json")
 			if err != nil {
 				log.Error(err, "Unable to load metrics dashboard template file:")
 				return nil, err
@@ -158,6 +158,10 @@ func (r *KserveMetricsDashboardReconciler) createDesiredResource(ctx context.Con
 			Data: map[string]string{
 				"supported": "false",
 			},
+		}
+		// Add labels to the configMap
+		configMap.Labels = map[string]string{
+			"app.opendatahub.io/kserve": "true",
 		}
 		if err := ctrl.SetControllerReference(isvc, configMap, r.client.Scheme()); err != nil {
 			log.Error(err, "Unable to add OwnerReference to the Metrics Dashboard Configmap")
@@ -179,7 +183,7 @@ func (r *KserveMetricsDashboardReconciler) createDesiredResource(ctx context.Con
 	}
 	// Add labels to the configMap
 	configMap.Labels = map[string]string{
-		"opendatahub.io/managed": "true",
+		"app.opendatahub.io/kserve": "true",
 	}
 	if err := ctrl.SetControllerReference(isvc, configMap, r.client.Scheme()); err != nil {
 		log.Error(err, "Unable to add OwnerReference to the Metrics Dashboard Configmap")
@@ -190,7 +194,7 @@ func (r *KserveMetricsDashboardReconciler) createDesiredResource(ctx context.Con
 }
 
 func substituteVariablesInQueries(data string, namespace string, name string, IntervalValue string) string {
-	return strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(data, "${namespace}", namespace), "${model_name}", name), "${rate_interval}", IntervalValue)
+	return strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(data, "${NAMESPACE}", namespace), "${MODEL_NAME}", name), "${RATE_INTERVAL}", IntervalValue)
 }
 
 func (r *KserveMetricsDashboardReconciler) getExistingResource(ctx context.Context, log logr.Logger, isvc *kservev1beta1.InferenceService) (*corev1.ConfigMap, error) {

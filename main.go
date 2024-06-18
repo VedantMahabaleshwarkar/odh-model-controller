@@ -138,7 +138,7 @@ func main() {
 				},
 				&v1.ConfigMap{}: {
 					Label: labels.SelectorFromSet(labels.Set{
-						"opendatahub.io/managed": "true",
+						"app.opendatahub.io/kserve": "true",
 					}),
 				},
 			},
