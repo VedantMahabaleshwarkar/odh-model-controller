@@ -17,14 +17,12 @@ package controllers
 
 import (
 	"context"
-	"reflect"
 	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/opendatahub-io/odh-model-controller/controllers/constants"
 	corev1 "k8s.io/api/core/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
@@ -77,24 +75,3 @@ var _ = Describe("KServe Custom CA Cert ConfigMap controller", func() {
 		})
 	})
 })
-
-func waitForConfigMap(cli client.Client, namespace, configmapName string, timeout time.Duration) (*corev1.ConfigMap, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-
-	for {
-		configmap := &corev1.ConfigMap{}
-		err := cli.Get(ctx, client.ObjectKey{Namespace: namespace, Name: configmapName}, configmap)
-		if err != nil {
-			time.Sleep(1 * time.Second)
-			continue
-		}
-		return configmap, nil
-	}
-}
-
-// compareConfigMap checks if two ConfigMap data are equal, if not return false
-func compareConfigMap(s1 *corev1.ConfigMap, s2 *corev1.ConfigMap) bool {
-	// Two ConfigMap will be equal if the data is identical
-	return reflect.DeepEqual(s1.Data, s2.Data)
-}
