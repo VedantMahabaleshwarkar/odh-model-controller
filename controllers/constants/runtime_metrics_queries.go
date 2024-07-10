@@ -25,11 +25,11 @@ const (
                 "queries": [
                     {
                         "title": "Number of successful incoming requests",
-                        "query": "sum(increase(predict_rpc_count_total{namespace='${NAMESPACE}',code='OK',model_id='${MODEL_NAME}'}[${RATE_INTERVAL}]))"
+                        "query": "round(sum(increase(predict_rpc_count_total{namespace='${NAMESPACE}',code='OK',model_id='${MODEL_NAME}'}[${RATE_INTERVAL}])))"
                     },
                     {
                         "title": "Number of failed incoming requests",
-                        "query": "sum(increase(predict_rpc_count_total{namespace='${NAMESPACE}',code!='OK',model_id='${MODEL_NAME}'}[${RATE_INTERVAL}]))"
+                        "query": "round(sum(increase(predict_rpc_count_total{namespace='${NAMESPACE}',code!='OK',model_id='${MODEL_NAME}'}[${RATE_INTERVAL}])))"
                     }
                 ]
             },
@@ -79,11 +79,11 @@ const (
                 "queries": [
                     {
                         "title": "Number of successful incoming requests",
-                        "query": "sum(increase(ovms_requests_success{namespace='${NAMESPACE}',name='${MODEL_NAME}'}[${RATE_INTERVAL}]))"
+                        "query": "round(sum(increase(ovms_requests_success{namespace='${NAMESPACE}',name='${MODEL_NAME}'}[${RATE_INTERVAL}])))"
                     },
                     {
                         "title": "Number of failed incoming requests",
-                        "query": "sum(increase(ovms_requests_fail{namespace='${NAMESPACE}',name='${MODEL_NAME}'}[${RATE_INTERVAL}]))"
+                        "query": "round(sum(increase(ovms_requests_fail{namespace='${NAMESPACE}',name='${MODEL_NAME}'}[${RATE_INTERVAL}])))"
                     }
                 ]
             },
@@ -133,11 +133,11 @@ const (
                 "queries": [
                     {
                         "title": "Number of successful incoming requests",
-                        "query": "sum(increase(tgi_request_success{namespace='${NAMESPACE}', pod=~'${MODEL_NAME}-predictor-.*'}[${RATE_INTERVAL}]))"
+                        "query": "round(sum(increase(tgi_request_success{namespace='${NAMESPACE}', pod=~'${MODEL_NAME}-predictor-.*'}[${RATE_INTERVAL}])))"
                     },
                     {
                         "title": "Number of failed incoming requests",
-                        "query": "sum(increase(tgi_request_failure{namespace='${NAMESPACE}', pod=~'${MODEL_NAME}-predictor-.*'}[${RATE_INTERVAL}]))"
+                        "query": "round(sum(increase(tgi_request_failure{namespace='${NAMESPACE}', pod=~'${MODEL_NAME}-predictor-.*'}[${RATE_INTERVAL}])))"
                     }
                 ]
             },
@@ -187,7 +187,7 @@ const (
                 "queries": [
                     {
                         "title": "Number of successful incoming requests",
-                        "query": "sum(increase(vllm:request_success_total{namespace='${NAMESPACE}',model_name='${model_name}'}[${RATE_INTERVAL}]))"
+                        "query": "round(sum(increase(vllm:request_success_total{namespace='${NAMESPACE}',model_name='${model_name}'}[${RATE_INTERVAL}])))"
                     }
                 ]
             },
