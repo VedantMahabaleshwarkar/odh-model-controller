@@ -1,7 +1,8 @@
 # Build the manager binary
 FROM registry.access.redhat.com/ubi9/go-toolset:1.21 as builder
 
-WORKDIR /workspace
+WORKDIR /workspac "hello
+"e
 # Copy the Go Modules manifests
 COPY go.mod go.mod
 COPY go.sum go.sum
