@@ -19,6 +19,7 @@ import (
 	"context"
 	"github.com/go-logr/logr"
 	kservev1beta1 "github.com/kserve/kserve/pkg/apis/serving/v1beta1"
+	constants2 "github.com/kserve/kserve/pkg/constants"
 	"github.com/opendatahub-io/odh-model-controller/controllers/comparators"
 	"github.com/opendatahub-io/odh-model-controller/controllers/processors"
 	"github.com/opendatahub-io/odh-model-controller/controllers/resources"
@@ -35,13 +36,15 @@ var _ SubResourceReconciler = (*KserveMetricsServiceMonitorReconciler)(nil)
 type KserveMetricsServiceMonitorReconciler struct {
 	NoResourceRemoval
 	client                client.Client
+	deploymentMode        constants2.DeploymentModeType
 	serviceMonitorHandler resources.ServiceMonitorHandler
 	deltaProcessor        processors.DeltaProcessor
 }
 
-func NewKServeMetricsServiceMonitorReconciler(client client.Client) *KserveMetricsServiceMonitorReconciler {
+func NewKServeMetricsServiceMonitorReconciler(client client.Client, deploymentMode constants2.DeploymentModeType) *KserveMetricsServiceMonitorReconciler {
 	return &KserveMetricsServiceMonitorReconciler{
 		client:                client,
+		deploymentMode:        deploymentMode,
 		serviceMonitorHandler: resources.NewServiceMonitorHandler(client),
 		deltaProcessor:        processors.NewDeltaProcessor(),
 	}
@@ -49,6 +52,11 @@ func NewKServeMetricsServiceMonitorReconciler(client client.Client) *KserveMetri
 
 func (r *KserveMetricsServiceMonitorReconciler) Reconcile(ctx context.Context, log logr.Logger, isvc *kservev1beta1.InferenceService) error {
 	log.V(1).Info("Reconciling Metrics ServiceMonitor for InferenceService")
+
+	// Not needed for serverless, this logic is only here to minimize changes
+	if r.deploymentMode == constants2.Serverless {
+		return nil
+	}
 
 	// Create Desired resource
 	desiredResource, err := r.createDesiredResource(ctx, log, isvc)

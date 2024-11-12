@@ -23,6 +23,7 @@ import (
 
 	"github.com/go-logr/logr"
 	kservev1beta1 "github.com/kserve/kserve/pkg/apis/serving/v1beta1"
+	constants2 "github.com/kserve/kserve/pkg/constants"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -38,8 +39,8 @@ func NewKServeRawInferenceServiceReconciler(client client.Client) *KserveRawInfe
 	subResourceReconciler := []SubResourceReconciler{
 		NewClusterRoleBindingReconciler(client, constants.KserveServiceAccountName),
 		NewKserveRawRouteReconciler(client),
-		NewKServeMetricsServiceMonitorReconciler(client),
-		NewKServeMetricsServiceMonitorReconciler(client),
+		NewKServeMetricsServiceMonitorReconciler(client, constants2.RawDeployment),
+		NewKServeMetricsServiceMonitorReconciler(client, constants2.RawDeployment),
 	}
 
 	return &KserveRawInferenceServiceReconciler{

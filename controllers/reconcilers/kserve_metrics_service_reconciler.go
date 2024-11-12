@@ -42,22 +42,27 @@ var _ SubResourceReconciler = (*KserveMetricsServiceReconciler)(nil)
 type KserveMetricsServiceReconciler struct {
 	NoResourceRemoval
 	client         client.Client
+	deploymentMode constants.DeploymentModeType
 	serviceHandler resources.ServiceHandler
 	deltaProcessor processors.DeltaProcessor
 }
 
-func NewKServeMetricsServiceReconciler(client client.Client) *KserveMetricsServiceReconciler {
+func NewKServeMetricsServiceReconciler(client client.Client, deploymentMode constants.DeploymentModeType) *KserveMetricsServiceReconciler {
 	return &KserveMetricsServiceReconciler{
 		client:         client,
+		deploymentMode: deploymentMode,
 		serviceHandler: resources.NewServiceHandler(client),
 		deltaProcessor: processors.NewDeltaProcessor(),
 	}
 }
 
-// TODO remove this reconcile loop in future versions
 func (r *KserveMetricsServiceReconciler) Reconcile(ctx context.Context, log logr.Logger, isvc *kservev1beta1.InferenceService) error {
 	log.V(1).Info("Reconciling Metrics Service for InferenceService, checking if there are resource for deletion")
 
+	// Not needed for serverless, this logic is only here to minimize changes
+	if r.deploymentMode == constants.Serverless {
+		return nil
+	}
 	// Create Desired resource
 	desiredResource, err := r.createDesiredResource(ctx, log, isvc)
 	if err != nil {

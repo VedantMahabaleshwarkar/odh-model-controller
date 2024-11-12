@@ -17,6 +17,7 @@ package reconcilers
 
 import (
 	"context"
+	constants2 "github.com/kserve/kserve/pkg/constants"
 
 	"github.com/hashicorp/go-multierror"
 
@@ -38,6 +39,8 @@ func NewKServeServerlessInferenceServiceReconciler(client client.Client, clientR
 	subResourceReconciler := []SubResourceReconciler{
 		NewKserveServiceMeshMemberReconciler(client),
 		NewKserveRouteReconciler(client),
+		NewKServeMetricsServiceMonitorReconciler(client, constants2.Serverless),
+		NewKServeMetricsServiceMonitorReconciler(client, constants2.Serverless),
 		NewKServePrometheusRoleBindingReconciler(client),
 		NewKServeIstioTelemetryReconciler(client),
 		NewKServeIstioServiceMonitorReconciler(client),
